@@ -13,6 +13,7 @@ export class HomePage implements OnInit{
   map: google.maps.Map;
   lon: any;
   lat: any;
+  places: Array<any>;
 
   constructor(private geolocation: Geolocation) {
 
@@ -34,10 +35,73 @@ export class HomePage implements OnInit{
         lng: this.lon
       }
       this.map.setCenter(pos);
+      
+      this.getRestaurants().then((results: Array<any>) =>{
+        this.places = results;
+        for (let i = 0; i < results.length; i++) {
+          this.createMarker(results[i]);
+          
+        }
+      }, (status) => console.log(status));
+      
     }).catch((error) => {
       console.log('Error getting location', error);
     });
 
     
+
+
+  }
+
+  createMarker(place: { geometry: { location: any; }; }) {
+    let marker = new google.maps.Marker({
+    map: this.map,
+    animation: google.maps.Animation.DROP,
+    position: place.geometry.location
+    });   
+  }  
+
+  addMarker(){
+
+    let marker = new google.maps.Marker({
+    map: this.map,
+    animation: google.maps.Animation.DROP,
+    position: this.map.getCenter()
+    });
+
+    let content = "<p>This is your current position !</p>";          
+    let infoWindow = new google.maps.InfoWindow({
+    content: content
+    });
+
+    google.maps.event.addListener(marker, 'click', () => {
+    infoWindow.open(this.map, marker);
+    });
+  }
+
+  getRestaurants(){
+    var service = new google.maps.places.PlacesService(this.map);
+    const pos = {
+      lat: this.lat,
+      lng: this.lon
+    }
+    let request = {
+      location: pos,
+      radius: 8047,
+      types: ["restaurant"]
+    };
+
+    return new Promise((resolve,reject)=>{
+      service.nearbySearch(request,function(results,status){
+          if(status === google.maps.places.PlacesServiceStatus.OK)
+          {
+              resolve(results);    
+          }else
+          {
+              reject(status);
+          }
+
+      }); 
+  });
   }
 }
